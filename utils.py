@@ -51,7 +51,7 @@ def load_data(image_path, flip=True, is_test=False):
     img_B = img_B/127.5 - 1.
 
     img_AB = np.concatenate((img_A, img_B), axis=2)
-    img_AB shape: (fine_size, fine_size, input_c_dim + output_c_dim) # Comment this while testing
+    #img_AB_shape = (fine_size, fine_size, input_c_dim + output_c_dim) # Comment this while testing
     return img_AB
 
 def load_image(image_path):

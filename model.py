@@ -18,8 +18,9 @@ class cyclegan(object):
         self.image_size = args.fine_size
         self.input_c_dim = args.input_nc
         self.output_c_dim = args.output_nc
-        self.lamda = args.lamda
+        self.lamda = 0.01
         self.dataset_dir = args.dataset_dir
+        self.have_embedding = args.embedding
         self.embedding1, self.embedding2 = None, None
         self.discriminator = discriminator
         self.generator = generator_unet
@@ -38,10 +39,7 @@ class cyclegan(object):
         self.pool = ImagePool(args.max_size)
 
     def _build_model(self):
-	self.real_data = tf.placeholder(tf.float32,
-                                        [None, self.image_size, self.image_size,
-                                         self.input_c_dim + self.output_c_dim],
-                                        name='real_A_and_B_images')
+        self.real_data = tf.placeholder(tf.float32, [None, self.image_size, self.image_size, self.input_c_dim + self.output_c_dim], name='real_A_and_B_images')
 
         self.real_A = self.real_data[:, :, :, :self.input_c_dim]
         self.real_B = self.real_data[:, :, :, self.input_c_dim:self.input_c_dim + self.output_c_dim]
@@ -52,10 +50,10 @@ class cyclegan(object):
         self.fake_B_, embedding_B_ = self.generator(self.fake_A, self.options, True, name="generatorA2B")  # g(f(y))
         self.DB_fake = self.discriminator(self.fake_B, self.options, reuse=False, name="discriminatorB")
         self.DA_fake = self.discriminator(self.fake_A, self.options, reuse=False, name="discriminatorA")
-        if(args.embedding != 0):
-        	embedding1 = np.array(pickle.load(open("./embedding/embedding1", "rb")), dtype="float32")
+        if(self.have_embedding != 0):
+                embedding1 = np.array(pickle.load(open("./embedding/embedding1", "rb")), dtype="float32")
                 self.embedding1 = tf.constant(embedding1)
-		embedding2 = np.array(pickle.load(open("./embedding/embedding2", "rb")), dtype="float32")
+                embedding2 = np.array(pickle.load(open("./embedding/embedding2", "rb")), dtype="float32")
                 self.embedding2 = tf.constant(embedding2)
         self.embedd = embedding_criterion(self.embedding1, embedding_A_) + embedding_criterion(embedding_B_, self.embedding2) + embedding_criterion(self.embedding1, self.embedding2)
 
@@ -177,9 +175,9 @@ class cyclegan(object):
                     self.sample_model(args.sample_dir, epoch, idx)
 
                 if np.mod(counter, 1000) == 2:
-		    embedding1, embedding2 = self.sess.run([self.embedding1, self.embedding2], feed_dict={self.real_data: batch_images})
-		    pickle.dump(np.array(embedding1, dtype="float32"), open("./embedding/embedding1.pkl", "wb+"))
-        	    pickle.dump(np.array(self.embedding2, dtype="float32"), open("./embedding/embedding2.pkl", "wb+"))
+                    embedding1, embedding2 = self.sess.run([self.embedding1, self.embedding2], feed_dict={self.real_data: batch_images})
+                    pickle.dump(np.array(embedding1, dtype=float), open("./embedding/embedding1.pkl", "wb+"))
+                    pickle.dump(np.array(embedding2, dtype=float), open("./embedding/embedding2.pkl", "wb+"))
                     self.save(args.checkpoint_dir, counter)
 
     def save(self, checkpoint_dir, step):
